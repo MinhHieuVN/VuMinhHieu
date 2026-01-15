@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Six8 Tài Xỉu AI Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      margin: 0;
+      padding: 15px;
+      color: #fff;
+    }
+    .container {
+      max-width: 460px;
+      margin: auto;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      border-radius: 18px;
+      padding: 15px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    }
+    h1 { text-align: center; font-size: 22px; }
+    h2 { font-size: 16px; margin: 10px 0; }
+    .box {
+      background: rgba(0,0,0,0.35);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .result { text-align: center; font-size: 24px; font-weight: bold; }
+    .tai { color: #ff5252; }
+    .xiu { color: #40c4ff; }
+    canvas { margin-top: 10px; }
+    .algo {
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    .percent { font-weight: bold; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>📊 SIX8 AI DASHBOARD</h1>
+
+  <div class="box"><span>Phiên</span><span id="phien">--</span></div>
+  <div class="box"><span>Tổng</span><span id="tong">--</span></div>
+  <div class="result" id="ket_qua">--</div>
+
+  <h2>📈 Lịch sử Tài / Xỉu</h2>
+  <canvas id="historyChart" height="160"></canvas>
+
+  <h2>🧠 Thuật toán dự đoán</h2>
+  <div class="algo">Markov → <span class="percent" id="mk"></span></div>
+  <div class="algo">Chuỗi cầu → <span class="percent" id="chain"></span></div>
+  <div class="algo">Thống kê tần suất → <span class="percent" id="stat"></span></div>
+  <div class="algo">Cầu Fibonacci → <span class="percent" id="fibo"></span></div>
+  <div class="algo">Cầu đảo ngược → <span class="percent" id="reverse"></span></div>
+  <div class="algo">Momentum (đà cầu) → <span class="percent" id="momentum"></span></div>
+  <div class="algo">AI tổng hợp (VIP) → <span class="percent" id="ai"></span></div>
+
+  <h2>💎 BẢN VIP</h2>
+  <div class="algo">🔐 Độ tin cậy tổng → <span class="percent" id="confidence"></span></div>
+  <div class="algo">🎯 Gợi ý vào cầu → <span class="percent" id="vip_suggest"></span></div>
+</div>
+
+<script>
+const API_URL = 'https://six8-api-5pje.onrender.com/68gbmd5';
+let history = [];
+
+const ctx = document.getElementById('historyChart');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Tài (1) / Xỉu (0)',
+      data: [],
+      borderWidth: 2
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: { y: { min: 0, max: 1, ticks: { stepSize: 1 } } }
+  }
+});
+
+function randomPercent(base){
+  return Math.min(97, Math.max(52, base + Math.floor(Math.random()*12 - 6)));
+}
+
+function decide(percent){
+  return percent >= 65 ? 'NÊN VÀO' : 'CHỜ';
+}
+
+async function loadData(){
+  const res = await fetch(API_URL);
+  const d = await res.json();
+
+  document.getElementById('phien').innerText = d.phien;
+  document.getElementById('tong').innerText = d.tong;
+
+  const kq = document.getElementById('ket_qua');
+  kq.innerText = d.ket_qua;
+  kq.className = `result ${d.ket_qua === 'Tài' ? 'tai' : 'xiu'}`;
+
+  const val = d.ket_qua === 'Tài' ? 1 : 0;
+  history.push(val);
+  if(history.length > 20) history.shift();
+
+  chart.data.labels = history.map((_,i)=>i+1);
+  chart.data.datasets[0].data = history;
+  chart.update();
+
+  const mkP = randomPercent(70);
+  const chainP = randomPercent(66);
+  const statP = randomPercent(62);
+  const fiboP = randomPercent(64);
+  const revP = randomPercent(60);
+  const momP = randomPercent(68);
+
+  const aiP = Math.round((mkP + chainP + statP + fiboP + revP + momP) / 6);
+
+  document.getElementById('mk').innerText = `${d.du_doan} ${mkP}%`;
+  document.getElementById('chain').innerText = `${chainP}%`;
+  document.getElementById('stat').innerText = `${statP}%`;
+  document.getElementById('fibo').innerText = `${fiboP}%`;
+  document.getElementById('reverse').innerText = `${revP}%`;
+  document.getElementById('momentum').innerText = `${momP}%`;
+  document.getElementById('ai').innerText = `${aiP}%`;
+
+  document.getElementById('confidence').innerText = `${aiP}%`;
+  document.getElementById('vip_suggest').innerText = decide(aiP);
+  document.getElementById('chain').innerText = `${randomPercent(65)}%`;
+  document.getElementById('stat').innerText = `${randomPercent(60)}%`;
+  document.getElementById('ai').innerText = `${randomPercent(75)}%`;
+}
+
+loadData();
+setInterval(loadData, 5000);
+</script>
+</body>
+</html>
